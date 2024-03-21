@@ -70,6 +70,9 @@ jobs:
           # For large files that are not easily compressed, a value of 0 is recommended for significantly faster uploads.
           # Optional. Default is '6'
           compression-level: 0
+      - uses: actions/checkout@v3
+        with:
+          token: ${{ github.token }}
 
       - name: 'Get Previous tag'
         id: previoustag

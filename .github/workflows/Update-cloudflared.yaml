@@ -23,20 +23,6 @@ jobs:
         with:
           token: ${{ github.token }}
 
-      - name: Check for changes in cf-go
-        id: cf_go_changes
-        run: |
-          # Get the commit hash of the previous commit
-          previous_commit=$(git rev-parse HEAD~1)
-          # Get the commit hash of the current commit
-          current_commit=$(git rev-parse HEAD)
-          # Check if the commit hashes are different
-          if [ "$previous_commit" != "$current_commit" ]; then
-            echo "::set-output name=has_changes::true"
-          else
-            echo "::set-output name=has_changes::false"
-          fi
-
       - name: Restore cached cf-go
         id: cache
         uses: actions/cache@v3
@@ -45,7 +31,7 @@ jobs:
           key: ${{ runner.os }}-cf-go
 
       - name: build cf-go
-        if: steps.cache.outputs.cache-hit != 'true' || steps.cf_go_changes.outputs.has_changes == 'true'
+        if: steps.cache.outputs.cache-hit != 'true' 
         run: |
           git clone https://github.com/cloudflare/go --depth 1
           cd go/src
@@ -53,7 +39,7 @@ jobs:
           chmod +x ../bin/go
 
       - name: cache cf-go
-        if: steps.cache.outputs.cache-hit != 'true' || steps.cf_go_changes.outputs.has_changes == 'true'
+        if: steps.cache.outputs.cache-hit != 'true'
         uses: actions/cache@v3
         with:
           path: /home/runner/work/cloudflared/cloudflared/go

@@ -21,8 +21,7 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v3
         with:
-          token: ${{ secrets.cf }}
-          fetch-depth: 2 # Fetch the last 2 commits to check for changes
+          token: ${{ github.token }}
 
       - name: Check for changes in cf-go
         id: cf_go_changes
@@ -92,7 +91,6 @@ jobs:
 
       - name: Release
         uses: softprops/action-gh-release@v2
-        if: steps.latest_tag.outputs.new_tag
         with:
           make_latest: "true"
           tag_name: ${{ steps.previoustag.outputs.tag }}

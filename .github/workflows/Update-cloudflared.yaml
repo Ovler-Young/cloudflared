@@ -9,8 +9,6 @@ on:
    # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
   push:
-    tags:
-      - '*'
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -23,14 +21,46 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v3
         with:
-          token: ${{ github.token }}
+          token: ${{ secrets.cf }}
+          fetch-depth: 2 # Fetch the last 2 commits to check for changes
+
+      - name: Check for changes in cf-go
+        id: cf_go_changes
+        run: |
+          # Get the commit hash of the previous commit
+          previous_commit=$(git rev-parse HEAD~1)
+          # Get the commit hash of the current commit
+          current_commit=$(git rev-parse HEAD)
+          # Check if the commit hashes are different
+          if [ "$previous_commit" != "$current_commit" ]; then
+            echo "::set-output name=has_changes::true"
+          else
+            echo "::set-output name=has_changes::false"
+          fi
+
+      - name: Restore cached cf-go
+        id: cache
+        uses: actions/cache@v3
+        with:
+          path: /home/runner/work/cloudflared/cloudflared/go
+          key: ${{ runner.os }}-cf-go
 
       - name: build cf-go
+        if: steps.cache.outputs.cache-hit != 'true' || steps.cf_go_changes.outputs.has_changes == 'true'
         run: |
           git clone https://github.com/cloudflare/go --depth 1
           cd go/src
           ./make.bash
           chmod +x ../bin/go
+
+      - name: cache cf-go
+        if: steps.cache.outputs.cache-hit != 'true' || steps.cf_go_changes.outputs.has_changes == 'true'
+        uses: actions/cache@v3
+        with:
+          path: /home/runner/work/cloudflared/cloudflared/go
+          key: ${{ runner.os }}-cf-go
+          restore-keys: |
+            ${{ runner.os }}-cf-go
 
       - name: build mipsle-cloudflared
         run: |
@@ -49,7 +79,6 @@ jobs:
           # A file, directory or wildcard pattern that describes what to upload
           # Required.
           path: /home/runner/work/cloudflared/cloudflared/cloudflared/cmd/cloudflared/cloudflared
-
 
           # The level of compression for Zlib to be applied to the artifact archive.
           # The value can range from 0 to 9.
